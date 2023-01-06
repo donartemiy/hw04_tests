@@ -23,7 +23,7 @@ class PostsViewsTests(TestCase):
             slug='test_slug_group2',
             description='Тестовое описание группы2'
         )
-        for i in range(0,25):
+        for i in range(0, 25):
             if i < 5:
                 Post.objects.create(
                     text=f'Тестовый текст{i}',
@@ -71,7 +71,7 @@ class PostsViewsTests(TestCase):
             ): 'posts/group_list.html',
 
             reverse(
-                'posts:profile', 
+                'posts:profile',
                 kwargs={'username': PostsViewsTests.test_user}
             ): 'posts/profile.html',
 
@@ -117,7 +117,10 @@ class PostsViewsTests(TestCase):
 
     def test_context_profile(self):
         self.add_entities_to_db()
-        response = self.authorized_client.get(reverse('posts:profile', kwargs={'username': 'TestUser1'}))
+        response = self.authorized_client.get(reverse(
+            'posts:profile',
+            kwargs={'username': 'TestUser1'})
+            )
         result_set = set()
         for i in response.context['page_obj']:
             result_set.add(i.text)
@@ -152,7 +155,10 @@ class PostsViewsTests(TestCase):
 
     def test_context_post_edit(self):
         """Шаблон сформирован с правильным контекстом."""
-        response = self.authorized_client.get(reverse('posts:post_edit', kwargs={'post_id': PostsViewsTests.post.pk}))
+        response = self.authorized_client.get(reverse(
+            'posts:post_edit',
+            kwargs={'post_id': PostsViewsTests.post.pk})
+            )
         self.assertIn('form', response.context)
         self.assertTrue(response.context['is_edit'])
         self.assertEqual(response.context['post_id'], PostsViewsTests.post.pk)

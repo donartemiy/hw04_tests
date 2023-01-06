@@ -57,7 +57,7 @@ class StaticURLTests(TestCase):
         )
 
         self.assertRedirects(
-            response, 
+            response,
             f'/auth/login/?next=/posts/{StaticURLTests.post.pk}/edit/'
         )
 
