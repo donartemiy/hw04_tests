@@ -2,6 +2,7 @@
 from django.test import TestCase, Client
 from posts.models import Group, Post, User
 
+
 # Переименовать атворизованного юзера authorized_client
 class StaticURLTests(TestCase):
     @classmethod
@@ -51,15 +52,25 @@ class StaticURLTests(TestCase):
         self.assertEqual(response.status_code, 404)
 
     def test_url_302_unknonw_user(self):
-        response = self.guest_client.get(f'/posts/{StaticURLTests.post.pk}/edit/')
-        self.assertRedirects(response, f'/auth/login/?next=/posts/{StaticURLTests.post.pk}/edit/')
+        response = self.guest_client.get(
+            f'/posts/{StaticURLTests.post.pk}/edit/'
+        )
+
+        self.assertRedirects(
+            response, 
+            f'/auth/login/?next=/posts/{StaticURLTests.post.pk}/edit/'
+        )
+
         response = self.guest_client.get('/create/')
         self.assertRedirects(response, '/auth/login/?next=/create/')
 
     def test_url_302_knonw_user(self):
         self.test_user2 = User.objects.create_user(username='TestUser2')
         self.guest_client.force_login(self.test_user2)
-        response = self.guest_client.get(f'/posts/{StaticURLTests.post.pk}/edit/')
+        response = self.guest_client.get(
+            f'/posts/{StaticURLTests.post.pk}/edit/'
+        )
+
         # self.assertEqual(response.status_code, 302)
         self.assertRedirects(response, f'/posts/{StaticURLTests.post.pk}/')
 
@@ -67,7 +78,9 @@ class StaticURLTests(TestCase):
         self.guest_client.force_login(StaticURLTests.test_user)
         urls_templates_names = {
             '/': 'posts/index.html',
-            f'/group/{StaticURLTests.post.group.slug}/': 'posts/group_list.html',
+            f'/group/{StaticURLTests.post.group.slug}/':
+            'posts/group_list.html',
+
             f'/profile/{StaticURLTests.post.author}/': 'posts/profile.html',
             '/create/': 'posts/create_post.html',
             f'/posts/{StaticURLTests.post.pk}/': 'posts/post_detail.html',

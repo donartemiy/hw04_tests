@@ -65,10 +65,25 @@ class PostsViewsTests(TestCase):
         templates_page_names = {
             reverse('posts:index'): 'posts/index.html',
             reverse('posts:post_create'): 'posts/create_post.html',
-            reverse('posts:group_list', kwargs={'slug': PostsViewsTests.post.group.slug}): 'posts/group_list.html',
-            reverse('posts:profile', kwargs={'username': PostsViewsTests.test_user}): 'posts/profile.html',
-            reverse('posts:post_detail', kwargs={'post_id': PostsViewsTests.post.pk}): 'posts/post_detail.html',
-            reverse('posts:post_edit', kwargs={'post_id': PostsViewsTests.post.pk}): 'posts/create_post.html',
+            reverse(
+                'posts:group_list',
+                kwargs={'slug': PostsViewsTests.post.group.slug}
+            ): 'posts/group_list.html',
+
+            reverse(
+                'posts:profile', 
+                kwargs={'username': PostsViewsTests.test_user}
+            ): 'posts/profile.html',
+
+            reverse(
+                'posts:post_detail',
+                kwargs={'post_id': PostsViewsTests.post.pk}
+            ): 'posts/post_detail.html',
+
+            reverse(
+                'posts:post_edit',
+                kwargs={'post_id': PostsViewsTests.post.pk}
+            ): 'posts/create_post.html',
         }
         for namspace_name, template in templates_page_names.items():
             with self.subTest(namspace_name=namspace_name):
@@ -85,7 +100,9 @@ class PostsViewsTests(TestCase):
     def test_context_group_list(self):
         """ Сравниваем текст постов для определенной группы. """
         self.add_entities_to_db()
-        response = self.authorized_client.get(reverse('posts:group_list', kwargs={'slug': 'test_slug_group1'}))
+        response = self.authorized_client.get(
+            reverse('posts:group_list', kwargs={'slug': 'test_slug_group1'})
+        )
         result_set = set()
         for i in response.context['page_obj']:
             result_set.add(i.text)
@@ -114,7 +131,9 @@ class PostsViewsTests(TestCase):
         self.assertEqual(result_set, expect_set)
 
     def test_context_post_detail(self):
-        response = self.authorized_client.get(reverse('posts:post_detail', kwargs={'post_id': PostsViewsTests.post.pk}))
+        response = self.authorized_client.get(reverse(
+            'posts:post_detail',
+            kwargs={'post_id': PostsViewsTests.post.pk}))
         post_object = response.context['post']
         self.assertEqual(post_object, PostsViewsTests.post)
         self.assertEqual(response.context['post'].text, 'Тестовый текст поста')
@@ -138,13 +157,19 @@ class PostsViewsTests(TestCase):
         self.assertTrue(response.context['is_edit'])
         self.assertEqual(response.context['post_id'], PostsViewsTests.post.pk)
         # Важный момент, получаем значения формы через instance
-        self.assertEqual(response.context.get('form').instance, PostsViewsTests.post)
+        self.assertEqual(
+            response.context.get('form').instance,
+            PostsViewsTests.post)
 
     def test_context_additional_check(self):
         reverse_list = [
             reverse('posts:index'),
-            reverse('posts:group_list', kwargs={'slug': PostsViewsTests.post.group.slug}),
-            reverse('posts:profile', kwargs={'username': PostsViewsTests.test_user})
+            reverse(
+                'posts:group_list',
+                kwargs={'slug': PostsViewsTests.post.group.slug}),
+            reverse(
+                'posts:profile',
+                kwargs={'username': PostsViewsTests.test_user})
         ]
         post = PostsViewsTests.post
         for rev in reverse_list:
@@ -176,18 +201,26 @@ class PaginatorViewsTest(TestCase):
         cls.authorized_client.force_login(cls.user)
         cls.page_name = {
             reverse('posts:index'): 'page_obj',
-            reverse('posts:group_list', kwargs={'slug': 'testovyj_slug'}): 'page_obj',
-            reverse('posts:profile', kwargs={'username': 'TestUser'}): 'page_obj'
+            reverse(
+                'posts:group_list',
+                kwargs={'slug': 'testovyj_slug'}): 'page_obj',
+            reverse(
+                'posts:profile',
+                kwargs={'username': 'TestUser'}): 'page_obj'
         }
 
     def test_first_page_contains_ten_records(self):
         for value, expected in self.page_name.items():
             with self.subTest(value=value):
                 response = self.authorized_client.get(value)
-                self.assertEqual(len(response.context[expected]), EXPECT_QENTITY_POSTS_PAGE_1)
+                self.assertEqual(
+                    len(response.context[expected]),
+                    EXPECT_QENTITY_POSTS_PAGE_1)
 
     def test_second_page_contains_three_records(self):
         for value, expected in self.page_name.items():
             with self.subTest(value=value):
                 response = self.client.get(value + '?page=2')
-                self.assertEqual(len(response.context[expected]), EXPECT_QENTITY_POSTS_PAGE_2)
+                self.assertEqual(
+                    len(response.context[expected]),
+                    EXPECT_QENTITY_POSTS_PAGE_2)
