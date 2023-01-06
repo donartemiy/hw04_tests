@@ -120,7 +120,7 @@ class PostsViewsTests(TestCase):
         response = self.authorized_client.get(reverse(
             'posts:profile',
             kwargs={'username': 'TestUser1'})
-            )
+        )
         result_set = set()
         for i in response.context['page_obj']:
             result_set.add(i.text)
@@ -158,7 +158,7 @@ class PostsViewsTests(TestCase):
         response = self.authorized_client.get(reverse(
             'posts:post_edit',
             kwargs={'post_id': PostsViewsTests.post.pk})
-            )
+        )
         self.assertIn('form', response.context)
         self.assertTrue(response.context['is_edit'])
         self.assertEqual(response.context['post_id'], PostsViewsTests.post.pk)
