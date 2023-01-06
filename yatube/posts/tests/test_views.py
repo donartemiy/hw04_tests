@@ -117,6 +117,7 @@ class PostsViewsTests(TestCase):
         response = self.authorized_client.get(reverse('posts:post_detail', kwargs={'post_id': PostsViewsTests.post.pk}))
         post_object = response.context['post']
         self.assertEqual(post_object, PostsViewsTests.post)
+        self.assertEqual(response.context['post'].text, 'Тестовый текст поста')
 
     def test_context_post_create(self):
         """Шаблон сформирован с правильным контекстом."""
