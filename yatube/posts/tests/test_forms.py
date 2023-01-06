@@ -1,5 +1,4 @@
 # posts/tests/tests_form.py
-from posts.forms import PostForm
 from posts.models import Post, Group, User
 from django.test import Client, TestCase
 from django.urls import reverse
@@ -44,7 +43,9 @@ class PostFormTests(TestCase):
             follow=True
         )
         self.assertEqual(response.status_code, 200)
-        self.assertRedirects(response, reverse('posts:profile', kwargs={'username': PostFormTests.test_user}))
+        self.assertRedirects(response, reverse(
+            'posts:profile', kwargs={'username': PostFormTests.test_user})
+        )
         self.assertEqual(Post.objects.count(), posts_count + 1)
         # Проверяем, что создалась запись с заданным текстом
         self.assertTrue(
@@ -61,12 +62,19 @@ class PostFormTests(TestCase):
         }
         # Отправляем POST-запрос
         response = PostFormTests.authorized_client.post(
-            reverse('posts:post_edit', kwargs={'post_id': PostFormTests.post.pk}),
+            reverse(
+                'posts:post_edit',
+                kwargs={'post_id': PostFormTests.post.pk}
+            ),
             data=form_data,
             follow=True
         )
         self.assertEqual(response.status_code, 200)
         # Проверяем, что текст изменился
-        self.assertEqual(Post.objects.get(pk=PostFormTests.post.pk).text, form_data['text'])
+        self.assertEqual(
+            Post.objects.get(pk=PostFormTests.post.pk).text,
+            form_data['text'])
         # Проверяем, что группа изменился
-        self.assertEqual(Post.objects.get(pk=PostFormTests.post.pk).group.id, form_data['group'])
+        self.assertEqual(
+            Post.objects.get(pk=PostFormTests.post.pk).group.id,
+            form_data['group'])
