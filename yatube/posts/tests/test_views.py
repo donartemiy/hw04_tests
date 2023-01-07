@@ -1,7 +1,7 @@
-from django.test import TestCase, Client
-from posts.models import Post, Group, User
-from django.urls import reverse
 from django import forms
+from django.test import TestCase, Client
+from django.urls import reverse
+from posts.models import Post, Group, User
 
 EXPECT_QENTITY_POSTS_PAGE_1 = 10
 EXPECT_QENTITY_POSTS_PAGE_2 = 2
@@ -134,12 +134,23 @@ class PostsViewsTests(TestCase):
         self.assertEqual(result_set, expect_set)
 
     def test_context_post_detail(self):
+        # response = self.guest_client.get(reverse('posts:post_detail',
+        # kwargs={'post_id': PostsViewsTests.post.pk}))
         response = self.authorized_client.get(reverse(
             'posts:post_detail',
-            kwargs={'post_id': PostsViewsTests.post.pk}))
+            kwargs={'post_id': self.post.pk})
+        )
         post_object = response.context['post']
         self.assertEqual(post_object, PostsViewsTests.post)
-        self.assertEqual(response.context['post'].text, 'Тестовый текст поста')
+        self.assertEqual(
+            response.context.get('post').text,
+            'Тестовый текст поста'
+        )
+        self.assertEqual(
+            response.context['post'].group.title,
+            'Тестовый заголовок группы'
+        )
+        self.assertEqual(response.context['post'].author.username, 'TestUser')
 
     def test_context_post_create(self):
         """Шаблон сформирован с правильным контекстом."""
