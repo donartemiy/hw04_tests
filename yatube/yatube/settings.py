@@ -51,6 +51,8 @@ EMAIL_BACKEND = 'django.core.mail.backends.filebased.EmailBackend'
 # Дирректория для писем
 EMAIL_FILE_PATH = os.path.join(BASE_DIR, 'sent_emails')
 
+# Изменяем логику обработки 403 error
+CSRF_FAILURE_VIEW = 'core.views.csrf_failure'
 
 # Application definition
 
