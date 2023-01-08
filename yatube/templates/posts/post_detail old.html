@@ -1,10 +1,23 @@
-{% extends 'base.html' %}
-
 {% load thumbnail %}
 
-{% block title %}Пост {{ post.text|slice:30 }}{% endblock %} 
-
-{% block content %}
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <!-- Подключены иконки, стили и заполенены мета теги -->
+    <title>Пост {{ post.text|slice:30 }}</title>
+  </head>
+  <body>
+    <header>
+      <nav class="navbar navbar-light" style="background-color: lightskyblue">
+        <div class="container">
+          <a class="navbar-brand" href="/">
+            <img src="/static/img/logo.png" width="30" height="30" class="d-inline-block align-top" alt="">
+            <span style="color:red">Ya</span>tube
+          </a>
+        </div>
+      </nav>      
+    </header>
+    <main>
       <div class="row">
         <aside class="col-12 col-md-3">
           <ul class="list-group list-group-flush">
@@ -16,6 +29,8 @@
               Группа: {{ post.group_id  }}
               {# формируем ссылку на группу, первая часть указывает на шаблон в urls.py вторая - ключи из views.py #}
               <a href="{% url 'posts:group_list' post.group.slug %}">все записи группы</a>
+              
+              {# Тут сам пост #}
               {{ posts_group }}
             </li>
             {% endif %}
@@ -36,18 +51,17 @@
         <article class="col-12 col-md-9">
           <p>
             {% thumbnail post.image "960x339" crop="center" upscale=True as im %}
-            <img class="card-img my-2" src="{{ im.url }}" width="{{ im.width }}" height="{{ im.height }}">
+            <img class="card-img my-2" src="{{ im.url }}">
             {% endthumbnail %}
           </p>
           <p>
             {{ post.text }}
-            {% if request_user == post.author %}
-            <!-- эта кнопка видна только автору -->
-            <a class="btn btn-primary" href="{% url 'posts:post_edit' post.id %}">
-              редактировать запись
-            </a>
-            {% endif %}
           </p>
         </article>
       </div> 
-{% endblock %} 
+    </main>
+    <footer class="border-top text-center py-3">
+      <p>© {{ key_year }} Copyright <span style="color:red">Ya</span>tube</p>
+    </footer>
+  </body>
+</html>

@@ -32,10 +32,18 @@ class Post(models.Model):
         verbose_name='Группа',
         help_text='Группа, к которой будет относится пост'
     )
+    image = models.ImageField(
+        'Картинка',
+        # дирректория для загрузки, относительно MEDIA_ROOT в settings
+        upload_to='posts/',
+        blank=True
+    )
 
     class Meta:
         ordering = ['-pub_date']
         default_related_name = 'posts_rname'
+        verbose_name = 'Пост'
+        verbose_name_plural = 'Посты'
 
     def __str__(self):
         return self.text[:30]
