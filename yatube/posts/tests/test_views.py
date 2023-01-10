@@ -126,6 +126,9 @@ class PostsViewsTests(TestCase):
         page_object = response.context['page_obj']
         self.assertEqual(len(page_object), EXPECT_QENTITY_POSTS_PAGE_1)
         # Не понятно как из паджинатора вытащить img
+        print(response.context['page_obj'][0])
+        print(response.context['page_obj'][1])
+        print(response.context['page_obj'][2])
 
     def test_context_group_list(self):
         """ Сравниваем текст постов для определенной группы. """
@@ -168,7 +171,6 @@ class PostsViewsTests(TestCase):
         response = self.authorized_client.get(reverse('posts:post_detail', kwargs={'post_id': self.post.pk}))
         post_object = response.context['post']
         self.assertEqual(post_object, PostsViewsTests.post)
-
 
     def test_context_post_create(self):
         """Шаблон сформирован с правильным контекстом."""
