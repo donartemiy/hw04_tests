@@ -12,7 +12,6 @@ class Group(models.Model):
     def __str__(self):
         return self.title
 
-
 class Post(models.Model):
     text = models.TextField(
         'Текст поста',
@@ -38,6 +37,10 @@ class Post(models.Model):
         upload_to='posts/',
         blank=True
     )
+    comments = models.ForeignKey(
+        'Comment',
+        on_delete=models.CASCADE
+    )
 
     class Meta:
         ordering = ['-pub_date']
@@ -47,3 +50,17 @@ class Post(models.Model):
 
     def __str__(self):
         return self.text[:30]
+
+
+class Comment(models.Model):
+    post = models.SlugField()
+    author = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='comments_rname'
+    )
+    text = models.TextField()
+    created = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.text
