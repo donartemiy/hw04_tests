@@ -122,13 +122,8 @@ class PostsViewsTests(TestCase):
         """ Считаем количество постов на странице. """
         self.add_entities_to_db()
         response = self.authorized_client.get(reverse('posts:index'))
-        # print(response.context.get('page_obj'))
         page_object = response.context['page_obj']
         self.assertEqual(len(page_object), EXPECT_QENTITY_POSTS_PAGE_1)
-        # Не понятно как из паджинатора вытащить img
-        print(response.context['page_obj'][0])
-        print(response.context['page_obj'][1])
-        print(response.context['page_obj'][2])
 
     def test_context_group_list(self):
         """ Сравниваем текст постов для определенной группы. """
@@ -216,9 +211,21 @@ class PostsViewsTests(TestCase):
                 self.assertEqual(page_object[0], post)
                 # self.assertContains(response, 'Тестовый текст поста')
 
-    def test_sahnov(self):
-        response = self.client.get('/' + '?page=1')
-        print(response.context['page_obj'])
+    def test_image_in_context_index(self):
+        response = self.authorized_client.get(reverse('posts:index'))
+        self.assertTrue(response.context['page_obj'][0].image)
+
+    def test_image_in_context_profile(self):
+        response = self.authorized_client.get((reverse('posts:profile', kwargs={'username': PostsViewsTests.test_user})))
+        self.assertTrue(response.context['page_obj'][0].image)
+
+    def test_image_in_context_group_list(self):
+        response = self.authorized_client.get((reverse('posts:group_list', kwargs={'slug': PostsViewsTests.post.group.slug})))
+        self.assertTrue(response.context['page_obj'][0].image)
+
+    def test_image_in_context_post_detail(self):
+        response = self.authorized_client.get((reverse('posts:post_detail', kwargs={'post_id': self.post.pk})))
+        self.assertTrue(response.context['post'].image)
 
 
 class PaginatorViewsTest(TestCase):
