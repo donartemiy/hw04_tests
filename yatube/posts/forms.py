@@ -22,7 +22,4 @@ class PostForm(forms.ModelForm):
 class CommentForm(forms.ModelForm):
     class Meta:
         model = Post
-        fields = (
-            # 'post',
-            'text'
-        )
+        fields = ('text',)
