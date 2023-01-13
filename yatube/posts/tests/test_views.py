@@ -1,7 +1,7 @@
 from django import forms
-from django.test import TestCase, Client
+from django.test import Client, TestCase
 from django.urls import reverse
-from posts.models import Post, Group, User
+from posts.models import Group, Post, User
 
 EXPECT_QENTITY_POSTS_PAGE_1 = 10
 EXPECT_QENTITY_POSTS_PAGE_2 = 2

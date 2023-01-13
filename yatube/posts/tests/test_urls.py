@@ -1,5 +1,5 @@
 # posts/tests/test_urls.py
-from django.test import TestCase, Client
+from django.test import Client, TestCase
 from posts.models import Group, Post, User
 
 
@@ -48,6 +48,8 @@ class StaticURLTests(TestCase):
                 self.assertEqual(response.status_code, 200)
 
     def test_url_404(self):
+        """ Неавторизованный пользователь не может
+        редактировать и создавать пост. """
         response = self.guest_client.get('/unexisting_page/')
         self.assertEqual(response.status_code, 404)
 
