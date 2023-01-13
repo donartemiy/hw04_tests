@@ -5,6 +5,7 @@ from posts.models import Group, Post, User
 
 EXPECT_QENTITY_POSTS_PAGE_1 = 10
 EXPECT_QENTITY_POSTS_PAGE_2 = 2
+QENTITY_POSTS_PAGINATOR = 12
 
 
 class PostsViewsTests(TestCase):
@@ -134,8 +135,6 @@ class PostsViewsTests(TestCase):
         self.assertEqual(result_set, expect_set)
 
     def test_context_post_detail(self):
-        # response = self.guest_client.get(reverse('posts:post_detail',
-        # kwargs={'post_id': PostsViewsTests.post.pk}))
         response = self.authorized_client.get(reverse(
             'posts:post_detail',
             kwargs={'post_id': self.post.pk})
@@ -208,12 +207,16 @@ class PaginatorViewsTest(TestCase):
             description='Тестовое описание',
         )
 
-        for i in range(12):
-            Post.objects.create(
+        posts_list = []
+        for i in range(QENTITY_POSTS_PAGINATOR):
+            posts_list.append(Post(
                 author=cls.user,
                 text=f'Тестовый пост {i}',
-                group=cls.group
+                group=cls.group)
             )
+        # хак для быстрого создания записей
+        cls.posts = Post.objects.bulk_create(posts_list)
+
         cls.authorized_client = Client()
         cls.authorized_client.force_login(cls.user)
         cls.page_name = {
