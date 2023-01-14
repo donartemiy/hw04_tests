@@ -5,39 +5,46 @@ from django.urls import reverse
 from posts.models import Group, Post, User
 from posts.views import COUNT_POSTS
 
-EXPECT_QENTITY_POSTS_PAGE_1 = COUNT_POSTS
-EXPECT_QENTITY_POSTS_PAGE_2 = 2
-QENTITY_POSTS_PAGINATOR = 12
+EXPECT_NUMB_POSTS_PAGE_1 = COUNT_POSTS
+EXPECT_NUMB_POSTS_PAGE_2 = 2
+NUMB_POSTS_PAGINATOR = 12
+NUMB_POSTS = 25
+NUMB_POSTS_G1_U1 = 5
+# REV_GROUP_LIST_TEST_SLUG_G1 = reverse('posts:group_list', kwargs={'slug': 'test_slug_group1'})
+# REVERSE_POST_INDEX = reverse('posts:index'): 'posts/index.html'
 
 
 class PostsViewsTests(TestCase):
     def add_entities_to_db(self):
         """ Добавляем записи в БД. """
-        test_user1 = User.objects.create_user(username='TestUser1')
-        test_user2 = User.objects.create_user(username='TestUser2')
+        self.test_user1 = User.objects.create_user(username='TestUser1')
+        self.test_user2 = User.objects.create_user(username='TestUser2')
 
-        group1 = Group.objects.create(
+        self.group1 = Group.objects.create(
             title='Тестовый заголовок группы1',
             slug='test_slug_group1',
             description='Тестовое описание группы1'
         )
-        group2 = Group.objects.create(
+        self.group2 = Group.objects.create(
             title='Тестовый заголовок группы2',
             slug='test_slug_group2',
             description='Тестовое описание группы2'
         )
-        for i in range(0, 25):
-            if i < 5:
+        self.expect_set = set()
+    
+        for i in range(NUMB_POSTS):
+            if i < NUMB_POSTS_G1_U1:
                 Post.objects.create(
                     text=f'Тестовый текст{i}',
-                    author=test_user1,
-                    group=group1
+                    author=self.test_user1,
+                    group=self.group1
                 )
+                self.expect_set.add(f'Тестовый текст{i}')
             else:
                 Post.objects.create(
                     text=f'Тестовый текст{i}',
-                    author=test_user2,
-                    group=group2
+                    author=self.test_user2,
+                    group=self.group2
                 )
 
     @classmethod
@@ -96,43 +103,29 @@ class PostsViewsTests(TestCase):
         self.add_entities_to_db()
         response = self.authorized_client.get(reverse('posts:index'))
         page_object = response.context['page_obj']
-        self.assertEqual(len(page_object), EXPECT_QENTITY_POSTS_PAGE_1)
+        self.assertEqual(len(page_object), EXPECT_NUMB_POSTS_PAGE_1)
 
     def test_context_group_list(self):
         """ Сравниваем текст постов для определенной группы. """
         self.add_entities_to_db()
         response = self.authorized_client.get(
-            reverse('posts:group_list', kwargs={'slug': 'test_slug_group1'})
+            reverse('posts:group_list', kwargs={'slug': self.group1.slug})
         )
         result_set = set()
         for i in response.context['page_obj']:
             result_set.add(i.text)
-        expect_set = {
-            'Тестовый текст0',
-            'Тестовый текст1',
-            'Тестовый текст2',
-            'Тестовый текст3',
-            'Тестовый текст4'
-        }
-        self.assertEqual(result_set, expect_set)
+        self.assertEqual(result_set, self.expect_set)
 
     def test_context_profile(self):
         self.add_entities_to_db()
         response = self.authorized_client.get(reverse(
             'posts:profile',
-            kwargs={'username': 'TestUser1'})
+            kwargs={'username': self.test_user1})
         )
         result_set = set()
         for i in response.context['page_obj']:
             result_set.add(i.text)
-        expect_set = {
-            'Тестовый текст0',
-            'Тестовый текст1',
-            'Тестовый текст2',
-            'Тестовый текст3',
-            'Тестовый текст4'
-        }
-        self.assertEqual(result_set, expect_set)
+        self.assertEqual(result_set, self.expect_set)
 
     def test_context_post_detail(self):
         response = self.authorized_client.get(reverse(
@@ -149,7 +142,10 @@ class PostsViewsTests(TestCase):
             response.context['post'].group.title,
             'Тестовый заголовок группы'
         )
-        self.assertEqual(response.context['post'].author.username, 'TestUser')
+        self.assertEqual(
+            response.context['post'].author.username,
+            PostsViewsTests.test_user.username
+        )
 
     def test_context_post_create(self):
         """Шаблон сформирован с правильным контекстом."""
@@ -207,7 +203,7 @@ class PaginatorViewsTest(TestCase):
         )
 
         posts_list = []
-        for i in range(QENTITY_POSTS_PAGINATOR):
+        for i in range(NUMB_POSTS_PAGINATOR):
             posts_list.append(Post(
                 author=cls.user,
                 text=f'Тестовый пост {i}',
@@ -222,10 +218,10 @@ class PaginatorViewsTest(TestCase):
             reverse('posts:index'): 'page_obj',
             reverse(
                 'posts:group_list',
-                kwargs={'slug': 'testovyj_slug'}): 'page_obj',
+                kwargs={'slug': cls.group.slug}): 'page_obj',
             reverse(
                 'posts:profile',
-                kwargs={'username': 'TestUser'}): 'page_obj'
+                kwargs={'username': cls.user.username}): 'page_obj'
         }
 
     def test_first_page_contains_ten_records(self):
@@ -234,7 +230,7 @@ class PaginatorViewsTest(TestCase):
                 response = self.authorized_client.get(value)
                 self.assertEqual(
                     len(response.context[expected]),
-                    EXPECT_QENTITY_POSTS_PAGE_1)
+                    EXPECT_NUMB_POSTS_PAGE_1)
 
     def test_second_page_contains_three_records(self):
         for value, expected in self.page_name.items():
@@ -242,4 +238,4 @@ class PaginatorViewsTest(TestCase):
                 response = self.client.get(value + '?page=2')
                 self.assertEqual(
                     len(response.context[expected]),
-                    EXPECT_QENTITY_POSTS_PAGE_2)
+                    EXPECT_NUMB_POSTS_PAGE_2)

@@ -2,7 +2,7 @@ from django.contrib.auth import get_user_model
 from django.db import models
 
 User = get_user_model()
-
+NUMB_SIBM = 30
 
 class Group(models.Model):
     title = models.CharField(max_length=200, verbose_name='Заголовок')
@@ -38,4 +38,4 @@ class Post(models.Model):
         default_related_name = 'posts_rname'
 
     def __str__(self):
-        return self.text[:30]
+        return self.text[:NUMB_SIBM]
