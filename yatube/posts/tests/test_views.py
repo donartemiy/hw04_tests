@@ -1,7 +1,6 @@
 from django import forms
 from django.test import Client, TestCase
 from django.urls import reverse
-
 from posts.models import Group, Post, User
 from posts.views import COUNT_POSTS
 
@@ -10,8 +9,6 @@ EXPECT_NUMB_POSTS_PAGE_2 = 2
 NUMB_POSTS_PAGINATOR = 12
 NUMB_POSTS = 25
 NUMB_POSTS_G1_U1 = 5
-# REV_GROUP_LIST_TEST_SLUG_G1 = reverse('posts:group_list', kwargs={'slug': 'test_slug_group1'})
-# REVERSE_POST_INDEX = reverse('posts:index'): 'posts/index.html'
 
 
 class PostsViewsTests(TestCase):
@@ -31,7 +28,7 @@ class PostsViewsTests(TestCase):
             description='Тестовое описание группы2'
         )
         self.expect_set = set()
-    
+
         for i in range(NUMB_POSTS):
             if i < NUMB_POSTS_G1_U1:
                 Post.objects.create(
