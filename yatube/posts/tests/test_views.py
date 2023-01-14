@@ -1,9 +1,11 @@
 from django import forms
 from django.test import Client, TestCase
 from django.urls import reverse
-from posts.models import Group, Post, User
 
-EXPECT_QENTITY_POSTS_PAGE_1 = 10
+from posts.models import Group, Post, User
+from posts.views import COUNT_POSTS
+
+EXPECT_QENTITY_POSTS_PAGE_1 = COUNT_POSTS
 EXPECT_QENTITY_POSTS_PAGE_2 = 2
 QENTITY_POSTS_PAGINATOR = 12
 
@@ -55,8 +57,6 @@ class PostsViewsTests(TestCase):
         )
 
     def setUp(self):
-        # Неавторизованный клиент
-        self.guest_client = Client()
         # Авторизованный клиент
         self.authorized_client = Client()
         self.authorized_client.force_login(PostsViewsTests.test_user)
@@ -193,7 +193,6 @@ class PostsViewsTests(TestCase):
                 response = self.authorized_client.get(rev)
                 page_object = response.context['page_obj']
                 self.assertEqual(page_object[0], post)
-                # self.assertContains(response, 'Тестовый текст поста')
 
 
 class PaginatorViewsTest(TestCase):

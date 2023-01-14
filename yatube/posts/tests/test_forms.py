@@ -1,6 +1,7 @@
-# posts/tests/tests_form.py
+from http import HTTPStatus
 from django.test import Client, TestCase
 from django.urls import reverse
+
 from posts.models import Group, Post, User
 
 
@@ -42,7 +43,7 @@ class PostFormTests(TestCase):
             data=form_data,
             follow=True
         )
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
         self.assertRedirects(response, reverse(
             'posts:profile', kwargs={'username': PostFormTests.test_user})
         )
@@ -50,7 +51,8 @@ class PostFormTests(TestCase):
         # Проверяем, что создалась запись с заданным текстом
         self.assertTrue(
             Post.objects.filter(
-                text='Тестовый текст поста 2'
+                text=form_data['text'],
+                group=form_data['group']
             ).exists()
         )
 
@@ -69,12 +71,8 @@ class PostFormTests(TestCase):
             data=form_data,
             follow=True
         )
-        self.assertEqual(response.status_code, 200)
-        # Проверяем, что текст изменился
-        self.assertEqual(
-            Post.objects.get(pk=PostFormTests.post.pk).text,
-            form_data['text'])
-        # Проверяем, что группа изменился
-        self.assertEqual(
-            Post.objects.get(pk=PostFormTests.post.pk).group.id,
-            form_data['group'])
+        edited_post = Post.objects.get(pk=PostFormTests.post.pk)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        # Проверяем, что текст с группой изменились
+        self.assertEqual(edited_post.text, form_data['text'])
+        self.assertEqual(edited_post.group.id, form_data['group'])

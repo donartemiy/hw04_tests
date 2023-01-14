@@ -1,5 +1,8 @@
 from django.test import TestCase
+
 from posts.models import Group, Post, User
+
+NUM_POSTS = 15
 
 
 class ModelTests(TestCase):
@@ -26,8 +29,8 @@ class ModelTests(TestCase):
 
     def test_post_str(self):
         post_obj = ModelTests.post
-        expected_obj_name = post_obj.text[:15]
-        self.assertEqual(expected_obj_name, str(post_obj)[:15])
+        expected_obj_name = post_obj.text[:NUM_POSTS]
+        self.assertEqual(expected_obj_name, str(post_obj))
 
     def test_post_verbose_name(self):
         post = ModelTests.post
