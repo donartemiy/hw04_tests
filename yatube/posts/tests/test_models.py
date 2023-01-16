@@ -1,7 +1,6 @@
 from django.test import TestCase
-from posts.models import Group, Post, User
 
-NUM_POSTS = 15
+from posts.models import NUMB_SIBM, Group, Post, User
 
 
 class ModelTests(TestCase):
@@ -17,7 +16,7 @@ class ModelTests(TestCase):
 
         cls.user = User.objects.create(username='auth')
         cls.post = Post.objects.create(
-            text='Тестовый текст',
+            text='Тестовый текст' * 10,
             author=cls.user,
         )
 
@@ -28,8 +27,12 @@ class ModelTests(TestCase):
 
     def test_post_str(self):
         post_obj = ModelTests.post
-        expected_obj_name = post_obj.text[:NUM_POSTS]
-        self.assertEqual(expected_obj_name, str(post_obj))
+        expected_obj_name = post_obj.text[:NUMB_SIBM]
+        self.assertEqual(str(post_obj), expected_obj_name)
+
+    def test_text_str_length_not_exceed(self):
+        post = ModelTests.post
+        self.assertEqual(len(str(post)), NUMB_SIBM)
 
     def test_post_verbose_name(self):
         post = ModelTests.post
