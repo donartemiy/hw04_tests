@@ -3,6 +3,9 @@ from django.contrib import admin
 # Функция include позволит использовать path() из других файлов.
 from django.urls import include, path
 
+# Переопределяем стандартный handler404
+handler404 = 'core.views.page_not_found'
+
 urlpatterns = [
     # Если на сервер пришел запрос '', только для namespace 'posts'
     # перейди в urls приложения posts и проверь там все path()

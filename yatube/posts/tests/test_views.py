@@ -1,10 +1,19 @@
-from django import forms
-from django.test import Client, TestCase
-from django.urls import reverse
+import shutil
+import tempfile
 
+from django import forms
+from django.conf import settings
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django.test import TestCase, Client, override_settings
+from django.urls import reverse
 from posts.models import Group, Post, User
 from posts.views import COUNT_POSTS
 
+# Временная папка для файлов
+TEMP_MEDIA_ROOT = tempfile.mkdtemp(dir=settings.BASE_DIR)
+
+EXPECT_QENTITY_POSTS_PAGE_1 = 10
+EXPECT_QENTITY_POSTS_PAGE_2 = 2
 EXPECT_NUMB_POSTS_PAGE_1 = COUNT_POSTS
 EXPECT_NUMB_POSTS_PAGE_2 = 2
 NUMB_POSTS_PAGINATOR = 12
@@ -12,6 +21,7 @@ NUMB_POSTS = 25
 NUMB_POSTS_G1_U1 = 5
 
 
+@override_settings(MEDIA_ROOT=TEMP_MEDIA_ROOT)
 class PostsViewsTests(TestCase):
     def add_entities_to_db(self):
         """ Добавляем записи в БД. """
@@ -55,11 +65,31 @@ class PostsViewsTests(TestCase):
             slug='test_slug_group',
             description='Тестовое описание группы'
         )
+        small_gif = (            
+             b'\x47\x49\x46\x38\x39\x61\x02\x00'
+             b'\x01\x00\x80\x00\x00\x00\x00\x00'
+             b'\xFF\xFF\xFF\x21\xF9\x04\x00\x00'
+             b'\x00\x00\x00\x2C\x00\x00\x00\x00'
+             b'\x02\x00\x01\x00\x00\x02\x02\x0C'
+             b'\x0A\x00\x3B'
+        )
+        uploaded = SimpleUploadedFile(
+            name='small.gif',
+            content=small_gif,
+            content_type='image/gif'
+        )
+
         cls.post = Post.objects.create(
             text='Тестовый текст поста',
             author=cls.test_user,
-            group=cls.group
+            group=cls.group,
+            image=uploaded
         )
+
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
+        shutil.rmtree(TEMP_MEDIA_ROOT, ignore_errors=True)
 
     def setUp(self):
         # Авторизованный клиент
@@ -125,6 +155,7 @@ class PostsViewsTests(TestCase):
             result_set.add(i.text)
         self.assertEqual(result_set, self.expect_set)
 
+# Тут проблемка
     def test_context_post_detail(self):
         response = self.authorized_client.get(reverse(
             'posts:post_detail',
@@ -188,6 +219,22 @@ class PostsViewsTests(TestCase):
                 page_object = response.context['page_obj']
                 self.assertEqual(page_object[0], post)
 
+    def test_image_in_context_index(self):
+        response = self.authorized_client.get(reverse('posts:index'))
+        self.assertTrue(response.context['page_obj'][0].image)
+
+    def test_image_in_context_profile(self):
+        response = self.authorized_client.get((reverse('posts:profile', kwargs={'username': PostsViewsTests.test_user})))
+        self.assertTrue(response.context['page_obj'][0].image)
+
+    def test_image_in_context_group_list(self):
+        response = self.authorized_client.get((reverse('posts:group_list', kwargs={'slug': PostsViewsTests.post.group.slug})))
+        self.assertTrue(response.context['page_obj'][0].image)
+
+    def test_image_in_context_post_detail(self):
+        response = self.authorized_client.get((reverse('posts:post_detail', kwargs={'post_id': self.post.pk})))
+        self.assertTrue(response.context['post'].image)
+
 
 class PaginatorViewsTest(TestCase):
     @classmethod
@@ -234,6 +281,7 @@ class PaginatorViewsTest(TestCase):
         for value, expected in self.page_name.items():
             with self.subTest(value=value):
                 response = self.client.get(value + '?page=2')
+                # print('\n\n', response.context)
                 self.assertEqual(
                     len(response.context[expected]),
                     EXPECT_NUMB_POSTS_PAGE_2)

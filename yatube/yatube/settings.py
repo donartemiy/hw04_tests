@@ -51,6 +51,8 @@ EMAIL_BACKEND = 'django.core.mail.backends.filebased.EmailBackend'
 # Дирректория для писем
 EMAIL_FILE_PATH = os.path.join(BASE_DIR, 'sent_emails')
 
+# Изменяем логику обработки 403 error
+CSRF_FAILURE_VIEW = 'core.views.csrf_failure'
 
 # Application definition
 
@@ -66,7 +68,8 @@ INSTALLED_APPS = [
     'django.contrib.auth',
     'users.apps.UsersConfig',    # Регистрируем приложение users
     'core',
-    'about'
+    'about',
+    'sorl.thumbnail'    # Для работы с графикой
 ]
 
 MIDDLEWARE = [
@@ -160,3 +163,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/2.2/howto/static-files/
 
 STATIC_URL = '/static/'
+
+# Дирректория для картинок
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
