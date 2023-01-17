@@ -1,9 +1,10 @@
-# posts/tests/test_urls.py
-from django.test import TestCase, Client
+from http import HTTPStatus
+
+from django.test import TestCase
+
 from posts.models import Group, Post, User
 
 
-# Переименовать атворизованного юзера authorized_client
 class StaticURLTests(TestCase):
     @classmethod
     def setUpClass(cls):
@@ -21,9 +22,6 @@ class StaticURLTests(TestCase):
             group=cls.group
         )
 
-    def setUp(self):
-        self.guest_client = Client()
-
     def test_url_200_unknonw_user(self):
         routes = [
             '/',
@@ -33,26 +31,28 @@ class StaticURLTests(TestCase):
         ]
         for route in routes:
             with self.subTest(route=route):
-                response = self.guest_client.get(route)
-                self.assertEqual(response.status_code, 200)
+                response = self.client.get(route)
+                self.assertEqual(response.status_code, HTTPStatus.OK)
 
     def test_url_200_knonw_user(self):
-        self.guest_client.force_login(StaticURLTests.test_user)
+        self.client.force_login(StaticURLTests.test_user)
         routes = [
             f'/posts/{StaticURLTests.post.pk}/edit/',
             '/create/'
         ]
         for route in routes:
             with self.subTest(route=route):
-                response = self.guest_client.get(route)
-                self.assertEqual(response.status_code, 200)
+                response = self.client.get(route)
+                self.assertEqual(response.status_code, HTTPStatus.OK)
 
     def test_url_404(self):
-        response = self.guest_client.get('/unexisting_page/')
-        self.assertEqual(response.status_code, 404)
+        """ Неавторизованный пользователь не может
+        редактировать и создавать пост. """
+        response = self.client.get('/unexisting_page/')
+        self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
 
     def test_url_302_unknonw_user(self):
-        response = self.guest_client.get(
+        response = self.client.get(
             f'/posts/{StaticURLTests.post.pk}/edit/'
         )
 
@@ -61,21 +61,20 @@ class StaticURLTests(TestCase):
             f'/auth/login/?next=/posts/{StaticURLTests.post.pk}/edit/'
         )
 
-        response = self.guest_client.get('/create/')
+        response = self.client.get('/create/')
         self.assertRedirects(response, '/auth/login/?next=/create/')
 
     def test_url_302_knonw_user(self):
         self.test_user2 = User.objects.create_user(username='TestUser2')
-        self.guest_client.force_login(self.test_user2)
-        response = self.guest_client.get(
+        self.client.force_login(self.test_user2)
+        response = self.client.get(
             f'/posts/{StaticURLTests.post.pk}/edit/'
         )
 
-        # self.assertEqual(response.status_code, 302)
         self.assertRedirects(response, f'/posts/{StaticURLTests.post.pk}/')
 
     def test_urls_uses_correct_temp(self):
-        self.guest_client.force_login(StaticURLTests.test_user)
+        self.client.force_login(StaticURLTests.test_user)
         urls_templates_names = {
             '/': 'posts/index.html',
             f'/group/{StaticURLTests.post.group.slug}/':
@@ -88,5 +87,5 @@ class StaticURLTests(TestCase):
         }
         for url, template in urls_templates_names.items():
             with self.subTest(url=url):
-                response = self.guest_client.get(url)
+                response = self.client.get(url)
                 self.assertTemplateUsed(response, template)

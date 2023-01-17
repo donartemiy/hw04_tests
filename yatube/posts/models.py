@@ -1,7 +1,8 @@
-from django.db import models
 from django.contrib.auth import get_user_model
+from django.db import models
 
 User = get_user_model()
+NUMB_SIBM = 15
 
 
 class Group(models.Model):
@@ -15,7 +16,7 @@ class Group(models.Model):
 
 class Post(models.Model):
     text = models.TextField(
-        'Текст поста',
+        'Текст поста',  # Иная форма записи verbose_name
         help_text='Введите текст поста'
     )
     pub_date = models.DateTimeField(auto_now_add=True, verbose_name='Дата')
@@ -50,7 +51,7 @@ class Post(models.Model):
         verbose_name_plural = 'Посты'
 
     def __str__(self):
-        return self.text[:30]
+        return self.text[:NUMB_SIBM]
 
 
 class Comment(models.Model):
