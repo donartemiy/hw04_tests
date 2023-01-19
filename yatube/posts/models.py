@@ -33,6 +33,18 @@ class Post(models.Model):
         verbose_name='Группа',
         help_text='Группа, к которой будет относится пост'
     )
+    # Поле для картинки (необязательное)
+    image = models.ImageField(
+        'Картинка',
+        upload_to='posts/',
+        blank=True
+    )
+    comments = models.ForeignKey(
+        'Comment',
+        null=True,
+        on_delete=models.CASCADE,
+        verbose_name='Комментарий'
+    )
 
     class Meta:
         ordering = ['-pub_date']
@@ -40,3 +52,33 @@ class Post(models.Model):
 
     def __str__(self):
         return self.text[:NUMB_SIBM]
+
+
+class Comment(models.Model):
+    # post = models.SlugField(unique=True, verbose_name='Ссылка')
+    post = models.ForeignKey(
+        Post,
+        on_delete=models.CASCADE,
+        verbose_name='comments'
+    )
+    author = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        verbose_name='comments',
+        # verbose_name='Автор'
+    )
+    text = models.TextField(
+        verbose_name='Текст комментария',
+        help_text='Введите текст комменатрия'
+    )
+    created = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name='Дата'
+    )
+
+    class Meta:
+        default_related_name = 'comment_rname'
+        # default_related_name = 'comments'
+
+    def __str__(self):
+        return self.text

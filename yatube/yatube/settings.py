@@ -32,6 +32,9 @@ ALLOWED_HOSTS = [
     'testserver'
 ]
 
+# Как обрабатывать 403
+CSRF_FAILURE_VIEW = 'core.views.csrf_failure'
+
 
 # Указываем откуда погружать статические файлы
 # static - имя каталога в головной территории проекта
@@ -66,7 +69,8 @@ INSTALLED_APPS = [
     'django.contrib.auth',
     'users.apps.UsersConfig',    # Регистрируем приложение users
     'core',
-    'about'
+    'about',
+    'sorl.thumbnail'    # Разрешает в шаблоне использовать тег thumbnail
 ]
 
 MIDDLEWARE = [
@@ -160,3 +164,13 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/2.2/howto/static-files/
 
 STATIC_URL = '/static/'
+
+# Папка для загрузки медиа/картинок
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+    }
+}

@@ -1,5 +1,6 @@
 from http import HTTPStatus
 
+from django.core.cache import cache
 from django.test import TestCase
 
 from posts.models import Group, Post, User
@@ -21,6 +22,9 @@ class StaticURLTests(TestCase):
             author=cls.test_user,
             group=cls.group
         )
+
+    def setUp(self):
+        cache.clear()
 
     def test_url_200_unknonw_user(self):
         routes = [

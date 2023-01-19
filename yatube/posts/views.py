@@ -1,11 +1,13 @@
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.cache import cache_page
 
-from .forms import PostForm
-from .models import Group, Post, User
+from .forms import CommentForm, PostForm
+from .models import Comment, Group, Post, User
 
 COUNT_POSTS = 10
+CACHE_TIME = 20
 
 
 def paginator(request, query_set):
@@ -15,6 +17,7 @@ def paginator(request, query_set):
     return page_obj
 
 
+@cache_page(CACHE_TIME, key_prefix="index_page")
 def index(request):
     posts = Post.objects.all()
 
@@ -49,13 +52,33 @@ def profile(request, username):
 
 def post_detail(request, post_id):
     post = get_object_or_404(Post, id=post_id)
-    context = {'post': post}
+    form = CommentForm(request.POST or None, files=request.FILES or None)
+    comments = Comment.objects.filter(post=post)
+    # print(f'{request.user} request.user.is_authenticated: {request.user.is_authenticated}')
+    if request.user.is_authenticated:
+        context = {
+            'post': post,
+            'post_id': post_id,
+            'form': form,
+            'comments': comments,
+            'user': request.user
+        }
+    else:
+        context = {
+            'post': post,
+            'post_id': post_id,
+            'comments': comments,
+            'user': request.user
+        }
     return render(request, 'posts/post_detail.html', context)
 
 
 @login_required
 def post_create(request):
-    form = PostForm(request.POST or None)
+    form = PostForm(
+        request.POST or None,
+        files=request.FILES or None,    # Для картинок
+    )
     if request.method == 'POST':
         if form.is_valid():
             new_post = form.save(commit=False)
@@ -68,7 +91,11 @@ def post_create(request):
 @login_required
 def post_edit(request, post_id):
     post = get_object_or_404(Post, pk=post_id)
-    form = PostForm(request.POST or None, instance=post)
+    form = PostForm(
+        request.POST or None,
+        files=request.FILES or None,    # Для картинок
+        instance=post
+    )
     if request.user != post.author:
         return redirect('posts:post_detail', post_id)
     if request.method == 'POST' and form.is_valid():
@@ -82,3 +109,16 @@ def post_edit(request, post_id):
         'post_id': post_id
     }
     return render(request, 'posts/create_post.html', context)
+
+
+def add_comment(request, post_id):
+    """Функция вызывается из шаблона comment.html"""
+    post = get_object_or_404(Post, pk=post_id)
+    # Получите пост и сохраните его в переменную post.
+    form = CommentForm(request.POST or None)
+    if form.is_valid():
+        comment = form.save(commit=False)
+        comment.author = request.user
+        comment.post = post
+        comment.save()
+    return redirect('posts:post_detail', post_id=post_id)

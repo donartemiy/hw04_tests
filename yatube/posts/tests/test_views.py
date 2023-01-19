@@ -1,5 +1,11 @@
+import shutil
+import tempfile
+
 from django import forms
-from django.test import Client, TestCase
+from django.conf import settings
+from django.core.cache import cache
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 
 from posts.models import Group, Post, User
@@ -10,8 +16,12 @@ EXPECT_NUMB_POSTS_PAGE_2 = 2
 NUMB_POSTS_PAGINATOR = 12
 NUMB_POSTS = 25
 NUMB_POSTS_G1_U1 = 5
+# Создаем временную папку для медиа-файлов;
+# на момент теста медиа папка будет переопределена
+TEMP_MEDIA_ROOT = tempfile.mkdtemp(dir=settings.BASE_DIR)
 
 
+@override_settings(MEDIA_ROOT=TEMP_MEDIA_ROOT)
 class PostsViewsTests(TestCase):
     def add_entities_to_db(self):
         """ Добавляем записи в БД. """
@@ -55,16 +65,38 @@ class PostsViewsTests(TestCase):
             slug='test_slug_group',
             description='Тестовое описание группы'
         )
+        small_gif = (
+             b'\x47\x49\x46\x38\x39\x61\x02\x00'
+             b'\x01\x00\x80\x00\x00\x00\x00\x00'
+             b'\xFF\xFF\xFF\x21\xF9\x04\x00\x00'
+             b'\x00\x00\x00\x2C\x00\x00\x00\x00'
+             b'\x02\x00\x01\x00\x00\x02\x02\x0C'
+             b'\x0A\x00\x3B'
+        )
+        uploaded = SimpleUploadedFile(
+            name='small.gif',
+            content=small_gif,
+            content_type='image/gif'
+        )
         cls.post = Post.objects.create(
             text='Тестовый текст поста',
             author=cls.test_user,
-            group=cls.group
+            group=cls.group,
+            image=uploaded
         )
 
     def setUp(self):
+        # Неавторизованный клиент
+        self.guest_client = Client()
         # Авторизованный клиент
         self.authorized_client = Client()
         self.authorized_client.force_login(PostsViewsTests.test_user)
+        cache.clear()
+
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
+        shutil.rmtree(TEMP_MEDIA_ROOT, ignore_errors=True)
 
     def test_context_pages_uses_correct_template(self):
         """ URL-адрес использует соответствующий шаблон. """
@@ -188,6 +220,98 @@ class PostsViewsTests(TestCase):
                 page_object = response.context['page_obj']
                 self.assertEqual(page_object[0], post)
 
+    def test_authorized_create_comment(self):
+        """ Авторизованный пользователь может комментировать посты. """
+        response = self.authorized_client.get(reverse(
+            'posts:post_detail',
+            kwargs={'post_id': PostsViewsTests.post.pk})
+        )
+        self.assertTrue(response.context.get('form'))
+
+    def test_guest_no_create_comment(self):
+        """ Неавторизованный пользователь не может комментировать посты. """
+        response = self.guest_client.get(reverse(
+            'posts:post_detail',
+            kwargs={'post_id': PostsViewsTests.post.pk})
+        )
+        self.assertFalse(response.context.get('form'))
+
+    def test_addition_comment_to_post_detail(self):
+        """ После успешной отправки комментарий
+        появляется на странице поста. """
+        form_data = {
+            'text': 'Тестовый комментарий',
+            'user': PostsViewsTests.test_user,
+            'author': PostsViewsTests.post.author
+        }
+        # Добавляем комментарий
+        self.authorized_client.post(
+            reverse(
+                'posts:add_comment',
+                kwargs={'post_id': PostsViewsTests.post.pk}
+            ),
+            data=form_data,
+            follow=True
+        )
+
+        # Получаем страницу после добавления комм-я
+        response = self.authorized_client.get(reverse(
+            'posts:post_detail',
+            kwargs={'post_id': PostsViewsTests.post.pk})
+        )
+        self.assertEqual(
+            response.context.get('comments').last().text,
+            form_data['text']
+        )
+
+    def test_cache(self):
+        """ Проверка работы кеша на главной странице. """
+        post = Post.objects.create(
+            author=self.test_user,
+            text='Тестовый пост_Кэш',
+            group=self.group,
+            image=None
+        )
+        post2 = Post.objects.create(    # Тут нужно добавить комментов и разобраться почему отдает None
+            author=self.test_user,
+            text='Тестовый пост_Кэш2',
+            group=self.group,
+            image=None
+        )
+        response1 = (self.authorized_client.get(reverse('posts:index')))
+        post.delete()
+        response2 = (self.authorized_client.get(reverse('posts:index')))
+        self.assertEqual(response1.content, response2.content)
+        cache.clear()
+        response3 = (self.authorized_client.get(reverse('posts:index')))
+        # print(response3.context)
+        self.assertNotEqual(response1.content, response3.content)
+
+    def test_img_in_context_index(self):
+        response = self.authorized_client.get(reverse('posts:index'))
+        self.assertTrue(response.context['page_obj'][0].image)
+
+    def test_img_in_context_profile(self):
+        response = self.authorized_client.get(reverse(
+            'posts:profile',
+            kwargs={'username': PostsViewsTests.test_user})
+        )
+        self.assertTrue(response.context['page_obj'][0].image)
+
+    def test_img_in_context_grouplist(self):
+        response = self.authorized_client.get(reverse(
+            'posts:group_list',
+            kwargs={'slug': PostsViewsTests.post.group.slug})
+        )
+        self.assertTrue(response.context['page_obj'][0].image)
+
+    def test_img_in_context_detail(self):
+        response = self.authorized_client.get(reverse(
+            'posts:post_detail',
+            kwargs={'post_id': PostsViewsTests.post.pk})
+        )
+        self.assertTrue(response.context['post'].image)
+
 
 class PaginatorViewsTest(TestCase):
     @classmethod
@@ -221,6 +345,9 @@ class PaginatorViewsTest(TestCase):
                 'posts:profile',
                 kwargs={'username': cls.user.username}): 'page_obj'
         }
+
+    def setUp(self):
+        cache.clear()
 
     def test_first_page_contains_ten_records(self):
         for value, expected in self.page_name.items():
