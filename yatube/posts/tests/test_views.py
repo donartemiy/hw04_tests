@@ -122,13 +122,15 @@ class PostsViewsTests(TestCase):
                 'posts:post_edit',
                 kwargs={'post_id': PostsViewsTests.post.pk}
             ): 'posts/create_post.html',
+
+            '/unexisting_page/': 'core/404.html',
         }
         for namspace_name, template in templates_page_names.items():
             with self.subTest(namspace_name=namspace_name):
                 response = self.authorized_client.get(namspace_name)
                 self.assertTemplateUsed(response, template)
 
-    def test_context_index(self):
+    def test_context_index_count_posts_on_page(self):
         """ Считаем количество постов на странице. """
         self.add_entities_to_db()
         response = self.authorized_client.get(reverse('posts:index'))
@@ -178,11 +180,12 @@ class PostsViewsTests(TestCase):
         )
 
     def test_context_post_create(self):
-        """Шаблон сформирован с правильным контекстом."""
+        """Страница с шаблоном сформирована с правильным контекстом. """
         response = self.authorized_client.get(reverse('posts:post_create'))
         form_fields = {
             'text': forms.fields.CharField,
-            'group': forms.models.ModelChoiceField
+            'group': forms.models.ModelChoiceField,
+            'image': forms.fields.ImageField
         }
         for value, expected in form_fields.items():
             with self.subTest(value=value):
@@ -272,7 +275,7 @@ class PostsViewsTests(TestCase):
             group=self.group,
             image=None
         )
-        post2 = Post.objects.create(    # Тут нужно добавить комментов и разобраться почему отдает None
+        post2 = Post.objects.create(            # Тут какая-то ернуда. Не понятно, почему второй запрос возвращает None
             author=self.test_user,
             text='Тестовый пост_Кэш2',
             group=self.group,
@@ -281,6 +284,7 @@ class PostsViewsTests(TestCase):
         response1 = (self.authorized_client.get(reverse('posts:index')))
         post.delete()
         response2 = (self.authorized_client.get(reverse('posts:index')))
+        print(response2.context)
         self.assertEqual(response1.content, response2.content)
         cache.clear()
         response3 = (self.authorized_client.get(reverse('posts:index')))

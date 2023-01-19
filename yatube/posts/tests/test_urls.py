@@ -49,9 +49,8 @@ class StaticURLTests(TestCase):
                 response = self.client.get(route)
                 self.assertEqual(response.status_code, HTTPStatus.OK)
 
-    def test_url_404(self):
-        """ Неавторизованный пользователь не может
-        редактировать и создавать пост. """
+    def test_url_unknonw_page_return_404(self):
+        """ Несуществующая страница отдаёт 404. """
         response = self.client.get('/unexisting_page/')
         self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
 
