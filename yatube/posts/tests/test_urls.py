@@ -27,6 +27,8 @@ class StaticURLTests(TestCase):
         cache.clear()
 
     def test_url_200_unknonw_user(self):
+        """ Не авторизованный пользователь.
+        Странички должны возвращать 200. """
         routes = [
             '/',
             f'/group/{StaticURLTests.post.group.slug}/',
@@ -39,10 +41,12 @@ class StaticURLTests(TestCase):
                 self.assertEqual(response.status_code, HTTPStatus.OK)
 
     def test_url_200_knonw_user(self):
+        """ Авторизованный пользователь. Странички должны возвращать 200. """
         self.client.force_login(StaticURLTests.test_user)
         routes = [
             f'/posts/{StaticURLTests.post.pk}/edit/',
-            '/create/'
+            '/create/',
+            '/follow/'
         ]
         for route in routes:
             with self.subTest(route=route):
@@ -55,19 +59,23 @@ class StaticURLTests(TestCase):
         self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
 
     def test_url_302_unknonw_user(self):
-        response = self.client.get(
-            f'/posts/{StaticURLTests.post.pk}/edit/'
-        )
-
-        self.assertRedirects(
-            response,
-            f'/auth/login/?next=/posts/{StaticURLTests.post.pk}/edit/'
-        )
-
-        response = self.client.get('/create/')
-        self.assertRedirects(response, '/auth/login/?next=/create/')
+        """ Не авторизованный пользователь. Проверка редиректа. """
+        url_expected_answer = {
+            f'/posts/{StaticURLTests.post.pk}/edit/':
+            f'/auth/login/?next=/posts/{StaticURLTests.post.pk}/edit/',
+            '/create/': '/auth/login/?next=/create/',
+            f'/profile/{StaticURLTests.test_user.username}/follow/':
+            (f'/auth/login/?next=/profile/{StaticURLTests.test_user.username}'
+              '/follow/'),
+            '/follow/': '/auth/login/?next=/follow/'
+        }
+        for url, expected_answer in url_expected_answer.items():
+            with self.subTest(url=url):
+                response = self.client.get(url)
+                self.assertRedirects(response, expected_answer)
 
     def test_url_302_knonw_user(self):
+        """ Авторизованный пользователь. Проверка редиректа. """
         self.test_user2 = User.objects.create_user(username='TestUser2')
         self.client.force_login(self.test_user2)
         response = self.client.get(
@@ -77,6 +85,7 @@ class StaticURLTests(TestCase):
         self.assertRedirects(response, f'/posts/{StaticURLTests.post.pk}/')
 
     def test_urls_uses_correct_temp(self):
+        """ Проверка шаблона. """
         self.client.force_login(StaticURLTests.test_user)
         urls_templates_names = {
             '/': 'posts/index.html',
@@ -86,7 +95,8 @@ class StaticURLTests(TestCase):
             f'/profile/{StaticURLTests.post.author}/': 'posts/profile.html',
             '/create/': 'posts/create_post.html',
             f'/posts/{StaticURLTests.post.pk}/': 'posts/post_detail.html',
-            f'/posts/{StaticURLTests.post.pk}/edit/': 'posts/create_post.html'
+            f'/posts/{StaticURLTests.post.pk}/edit/': 'posts/create_post.html',
+            '/follow/': 'posts/follow.html'
         }
         for url, template in urls_templates_names.items():
             with self.subTest(url=url):

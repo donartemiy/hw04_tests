@@ -31,7 +31,7 @@ class Post(models.Model):
         null=True,
         on_delete=models.SET_NULL,
         verbose_name='Группа',
-        help_text='Группа, к которой будет относится пост'
+        help_text='Группа, к которой будет относиться пост'
     )
     # Поле для картинки (необязательное)
     image = models.ImageField(
@@ -82,3 +82,18 @@ class Comment(models.Model):
 
     def __str__(self):
         return self.text
+
+
+class Follow(models.Model):
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        verbose_name='Подписчик',
+        related_name='follower'
+    )
+    author = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        verbose_name='Автор',
+        related_name='following'
+    )

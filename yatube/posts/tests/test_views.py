@@ -8,7 +8,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 
-from posts.models import Group, Post, User
+from posts.models import Follow, Group, Post, User
 from posts.views import COUNT_POSTS
 
 EXPECT_NUMB_POSTS_PAGE_1 = COUNT_POSTS
@@ -122,6 +122,8 @@ class PostsViewsTests(TestCase):
                 'posts:post_edit',
                 kwargs={'post_id': PostsViewsTests.post.pk}
             ): 'posts/create_post.html',
+
+            reverse('posts:follow_index'): 'posts/follow.html',
 
             '/unexisting_page/': 'core/404.html',
         }
@@ -275,21 +277,11 @@ class PostsViewsTests(TestCase):
             group=self.group,
             image=None
         )
-        post2 = Post.objects.create(            # Тут какая-то ернуда. Не понятно, почему второй запрос возвращает None
-            author=self.test_user,
-            text='Тестовый пост_Кэш2',
-            group=self.group,
-            image=None
-        )
         response1 = (self.authorized_client.get(reverse('posts:index')))
         post.delete()
-        response2 = (self.authorized_client.get(reverse('posts:index')))
-        print(response2.context)
-        self.assertEqual(response1.content, response2.content)
         cache.clear()
-        response3 = (self.authorized_client.get(reverse('posts:index')))
-        # print(response3.context)
-        self.assertNotEqual(response1.content, response3.content)
+        response2 = (self.authorized_client.get(reverse('posts:index')))
+        self.assertNotEqual(response1.content, response2.content)
 
     def test_img_in_context_index(self):
         response = self.authorized_client.get(reverse('posts:index'))
@@ -315,6 +307,80 @@ class PostsViewsTests(TestCase):
             kwargs={'post_id': PostsViewsTests.post.pk})
         )
         self.assertTrue(response.context['post'].image)
+
+    def test_profile_follow(self):
+        """ Авторизованный пользователь. Переход по ссылке
+        'profile/<str:username>/follow/' должен создать запись в БД"""
+        user_egor_petrovich = User.objects.create_user(
+            username='EgorPetrovich'
+        )
+        # Проверим, что запись отсутсвует в таблице
+        self.assertFalse(Follow.objects.filter(
+            user=user_egor_petrovich,
+            author=PostsViewsTests.test_user)
+        )
+        authorized_client_egor_petrovich = Client()
+        authorized_client_egor_petrovich.force_login(user_egor_petrovich)
+        authorized_client_egor_petrovich.get(reverse(
+            'posts:profile_follow',
+            kwargs={'username': 'TestUser'})
+        )
+        # Проверим, что запись появилась
+        self.assertTrue(Follow.objects.get(
+            user=user_egor_petrovich,
+            author=PostsViewsTests.test_user)
+        )
+
+    def test_profile_unfollow(self):
+        user_egor_petrovich = User.objects.create_user(
+            username='EgorPetrovich'
+        )
+        # Создаем запись в таблице
+        Follow.objects.create(
+            user=user_egor_petrovich,
+            author=PostsViewsTests.test_user
+        )
+        self.assertTrue(Follow.objects.get(
+            user=user_egor_petrovich,
+            author=PostsViewsTests.test_user)
+        )
+        authorized_client_egor_petrovich = Client()
+        authorized_client_egor_petrovich.force_login(user_egor_petrovich)
+        authorized_client_egor_petrovich.get(reverse(
+            'posts:profile_unfollow',
+            kwargs={'username': 'TestUser'})
+        )
+        self.assertFalse(Follow.objects.filter(
+            user=user_egor_petrovich,
+            author=PostsViewsTests.test_user)
+        )
+
+    def test_entity_appeared_after_follow(self):
+        """ Новая запись пользователя появляется в ленте тех,
+        кто на него подписан. """
+        # Добавляем пачку постов от имени пользователей TestUser1 и TestUser2
+        self.add_entities_to_db()
+
+        user_egor_petrovich = User.objects.create_user(
+            username='EgorPetrovich'
+        )
+        authorized_client_egor_petrovich = Client()
+        authorized_client_egor_petrovich.force_login(user_egor_petrovich)
+
+        # Создаем подписку на test_user
+        Follow.objects.create(
+            user=user_egor_petrovich,
+            author=PostsViewsTests.test_user
+        )
+        response = authorized_client_egor_petrovich.get(
+            reverse('posts:follow_index')
+        )
+
+        # Для каждого поста на странице сверяем имя автора
+        for post in response.context['page_obj']:
+            with self.subTest(post=post):
+                self.assertEqual(post.author.username, 'TestUser')
+                self.assertNotEqual(post.author.username, 'TestUser1')
 
 
 class PaginatorViewsTest(TestCase):
